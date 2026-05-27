@@ -1,102 +1,56 @@
 # WineMorpher
 
-WineMorpher is an experimental World of Warcraft 3.3.5a appearance morpher for Wine and WoWSilicon on macOS. It combines a normal WoW addon UI with a small native DLL loaded through `dlls.txt`.
+WineMorpher is an experimental World of Warcraft 3.3.5a appearance morpher for Wine and WoWSilicon on macOS.
 
-The goal is a Transmorpher-style workflow that works under Wine: preview gear, apply local visual morphs, build outfits, change race/NPC display, morph mounts and pets, apply weapon enchants, adjust scale, and switch titles from one in-game panel.
+It has two parts:
 
-![WineMorpher command flow](docs/assets/winemorpher-flow.svg)
-
-## Project Status
-
-Working locally:
-
-- WoW 3.3.5a DLL bridge under Wine/WoWSilicon
-- `/wmorph` slash command bridge
-- In-game GUI
-- Player display/race morph
-- Scale morph
-- Mount morph by display ID
-- Gear item morph, hide, reset, and apply-all
-- Main-hand and off-hand enchant morph
-- Hunter pet morph and pet scale
-- Loadout save/load UI
-- Sets, titles, mounts, creatures, and item browsers when local data is installed
-
-Still being polished:
-
-- Title behavior across different 3.3.5a clients/servers
-- More complete set browsing and class filters
-- Better loadout import/export
-- Real in-game screenshots and release ZIP packaging
-- Stable replacement for mount/NPC model previews, which are unreliable with 3.3.5 `PlayerModel` under this Wine setup
-
-## Data Notice
-
-This public repository ships with safe empty database stubs only.
-
-The local development copy can use large item, preview, creature, set, mount, enchant, pet, and title databases, but some of those were researched from third-party addon data. The reference Transmorpher repository currently has no explicit public license, so those copied data files are not bundled here.
-
-To publish a full database legally, replace the stubs in `addon/WineMorpher_Data/db/` with data you generated yourself, extracted from a licensed source, or have permission to redistribute.
-
-## How It Works
-
-WineMorpher has two parts:
-
-- `addon/WineMorpher`: visible in-game UI, slash commands, preview logic, saved variables, and command queueing.
-- `native/winemorpher.dll`: 32-bit native bridge loaded by Wine/WoWSilicon that applies local WoW 3.3.5a visual update-field changes.
-
-The addon writes commands into `WINEMORPHER_CMD`. The DLL polls that Lua global, parses the command, writes the relevant local player/pet fields, and updates status globals for the UI.
+- a WoW addon, used for the `/wmorph` GUI and commands
+- a 32-bit Windows DLL, loaded by WoWSilicon/Wine from `dlls.txt`
 
 ![WineMorpher UI map](docs/assets/winemorpher-ui-map.svg)
 
-## Requirements
+## Download
 
-- World of Warcraft 3.3.5a Windows client
-- Wine/WoWSilicon setup that loads DLLs from `dlls.txt`
-- Existing WoWSilicon support DLLs in the game `mods` folder, usually:
-  - `mods/libSiliconPatch.dll`
-  - `mods/winerosetta.dll`
-- Build tools:
-  - `make`
-  - `clang`
-  - `i686-w64-mingw32-gcc`
+Download the latest `WineMorpher-vX.X.X.zip` from [GitHub Releases](https://github.com/csw48/WineMorpher/releases).
 
-## Build
-
-```sh
-cd native
-make
-```
-
-Run native command parser tests:
-
-```sh
-make test
-```
-
-Optional Lua syntax checks:
-
-```sh
-npx --yes luaparse addon/WineMorpher/GUI.lua >/dev/null
-npx --yes luaparse addon/WineMorpher/WineMorpher.lua >/dev/null
-npx --yes luaparse addon/WineMorpher_Data/DataAPI.lua >/dev/null
-```
+The release ZIP already contains the built DLL. Normal users do not need to run `make`.
 
 ## Install
 
-From the repository root:
+Close WoW completely first.
 
-```sh
-./install.sh "/path/to/world of warcraft 3.3.5a hd"
+Copy these folders from the release ZIP:
+
+```txt
+Interface/AddOns/WineMorpher
+Interface/AddOns/WineMorpher_Data
 ```
 
-The installer copies:
+to your WoW folder:
 
-- `addon/WineMorpher` to `Interface/AddOns/WineMorpher`
-- `addon/WineMorpher_Data` to `Interface/AddOns/WineMorpher_Data`
-- `native/build/winemorpher.dll` to `mods/winemorpher.dll`
+```txt
+World of Warcraft 3.3.5a/Interface/AddOns/
+```
 
-It also writes `dlls.txt`:
+Copy this file from the release ZIP:
+
+```txt
+mods/winemorpher.dll
+```
+
+to your WoW folder:
+
+```txt
+World of Warcraft 3.3.5a/mods/winemorpher.dll
+```
+
+Open or create this file in your WoW folder:
+
+```txt
+dlls.txt
+```
+
+Make sure it contains:
 
 ```txt
 mods/winemorpher.dll
@@ -104,20 +58,67 @@ mods/libSiliconPatch.dll
 mods/winerosetta.dll
 ```
 
-After replacing `mods/winemorpher.dll`, fully close WoW/Wine and start the game again. `/reload` is enough only for Lua addon changes.
+Start WoW again. In game, type:
 
-## Usage
+```txt
+/wmorph
+```
 
-Open the GUI:
+or:
+
+```txt
+/wmorph gui
+```
+
+## Important Database Note
+
+The public GitHub release includes the working addon and DLL, but only empty database stubs.
+
+That means manual commands can work, but full Transmorpher-style browsing, item preview grids, mount lists, creature lists, set lists, and title lists will be incomplete until real redistributable database files are added.
+
+The reason is simple: the Transmorpher repository currently has no explicit public license, so its full data files are not bundled here. To ship a complete public release, WineMorpher needs one of these:
+
+- permission from the Transmorpher author to redistribute the data
+- a clean generated database pipeline from WoW client data
+- another licensed data source
+
+For local private testing, you can replace the stub files in:
+
+```txt
+Interface/AddOns/WineMorpher_Data/db/
+```
+
+with your own database files.
+
+## What Works
+
+Working in the current local development build:
+
+- `/wmorph` GUI
+- DLL load/status bridge
+- player display/race morph
+- scale morph
+- mount morph by display ID
+- gear item morph by slot and item ID
+- hide/reset item slots
+- main-hand and off-hand enchant morphs
+- hunter pet morph and pet scale
+- loadout UI
+- set/title/mount/creature/item browsers when a real local database is installed
+
+Still being polished:
+
+- public redistributable database files
+- title reliability across different 3.3.5a clients/servers
+- complete set filters and previews
+- real in-game screenshots
+- mount/NPC preview models, which are unreliable with 3.3.5 `PlayerModel` under Wine
+
+## Commands
 
 ```txt
 /wmorph
 /wmorph gui
-```
-
-Useful commands:
-
-```txt
 /wmorph status
 /wmorph display <displayID>
 /wmorph reset
@@ -166,14 +167,48 @@ Common 3.3.5 item slots:
 | 18 | Ranged |
 | 19 | Tabard |
 
-## Roadmap
+## Developer Build
 
-- Add a release ZIP that contains the built DLL plus addon folders.
-- Replace database stubs with a redistributable generated data pipeline.
-- Finish title reliability testing on multiple 3.3.5a clients.
-- Improve sets with tier/class filters and richer preview behavior.
-- Add loadout import/export.
-- Add real in-game screenshots after the UI stabilizes.
+Only developers need this section.
+
+Build the DLL:
+
+```sh
+cd native
+make
+```
+
+Run native tests:
+
+```sh
+make test
+```
+
+Optional Lua syntax checks:
+
+```sh
+npx --yes luaparse addon/WineMorpher/GUI.lua >/dev/null
+npx --yes luaparse addon/WineMorpher/WineMorpher.lua >/dev/null
+npx --yes luaparse addon/WineMorpher_Data/DataAPI.lua >/dev/null
+```
+
+Developer helper install:
+
+```sh
+./install.sh "/path/to/world of warcraft 3.3.5a hd"
+```
+
+Build a release ZIP:
+
+```sh
+scripts/package-release.sh v0.2.0
+```
+
+## How It Works
+
+The addon writes commands into the Lua global `WINEMORPHER_CMD`. The DLL polls that value, parses commands, writes local WoW 3.3.5a appearance fields, and updates status globals back to Lua.
+
+![WineMorpher command flow](docs/assets/winemorpher-flow.svg)
 
 ## Safety
 
@@ -181,4 +216,4 @@ WineMorpher is local visual morphing, not server-side transmog. It is intended f
 
 ## Credits
 
-WineMorpher is inspired by Kirazul's Transmorpher UI and workflow, and by the WoWSilicon/Wine ecosystem that makes the 3.3.5a client usable on macOS.
+WineMorpher is inspired by Kirazul's Transmorpher UI/workflow and the WoWSilicon/Wine ecosystem.

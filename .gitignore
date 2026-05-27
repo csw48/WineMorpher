@@ -4,5 +4,6 @@ native/build/
 build/
 dist/
 release/
+*.zip
 *.tmp
 *.bak
