@@ -1,0 +1,3 @@
+local addon, ns = ...
+
+ns.petsDB = ns.petsDB or {}

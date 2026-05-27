@@ -1,0 +1,3 @@
+local addon, ns = ...
+
+ns.creatureDisplayDB = ns.creatureDisplayDB or {}

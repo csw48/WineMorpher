@@ -1,0 +1,10 @@
+## Interface: 30300
+## Title: WineMorpher
+## Notes: Minimal Wine-safe morph bridge for WoW 3.3.5a
+## Author: Daniel + Codex
+## Version: 0.2.0
+## OptionalDeps: WineMorpher_Data, ElvUI, SharedMedia, LibSharedMedia-3.0
+## SavedVariablesPerCharacter: WineMorpherState
+
+WineMorpher.lua
+GUI.lua

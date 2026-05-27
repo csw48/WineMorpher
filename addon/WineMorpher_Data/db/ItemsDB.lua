@@ -1,0 +1,3 @@
+local addon, ns = ...
+
+ns.items = ns.items or {}

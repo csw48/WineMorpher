@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="520" viewBox="0 0 1040 520" role="img" aria-label="WineMorpher UI map">
+  <rect width="1040" height="520" fill="#0b0f14"/>
+  <rect x="36" y="32" width="968" height="456" fill="#10151c" stroke="#283442" stroke-width="2"/>
+  <rect x="36" y="32" width="968" height="48" fill="#151a22" stroke="#28a7d8" stroke-width="2"/>
+  <text x="60" y="63" fill="#f5c842" font-family="Arial, sans-serif" font-size="22" font-weight="700">WineMorpher</text>
+  <text x="880" y="63" fill="#dbe7f3" font-family="Arial, sans-serif" font-size="14" font-weight="700">DLL loaded</text>
+
+  <defs>
+    <style>
+      .label { fill:#ffffff; font:700 15px Arial,sans-serif; }
+      .muted { fill:#aeb9c6; font:13px Arial,sans-serif; }
+      .gold { fill:#f5c842; font:700 14px Arial,sans-serif; }
+      .panel { fill:#0e1319; stroke:#273241; stroke-width:2; rx:6; }
+      .active { fill:#12617d; stroke:#28a7d8; stroke-width:1; rx:4; }
+      .button { fill:#1a2028; stroke:#29323d; stroke-width:1; rx:4; }
+    </style>
+  </defs>
+
+  <rect class="panel" x="56" y="102" width="150" height="356"/>
+  <rect class="active" x="76" y="122" width="110" height="32"/>
+  <text class="label" x="108" y="143">Preview</text>
+  <rect class="button" x="76" y="164" width="110" height="32"/><text class="label" x="112" y="185">Mount</text>
+  <rect class="button" x="76" y="206" width="110" height="32"/><text class="label" x="112" y="227">Morph</text>
+  <rect class="button" x="76" y="248" width="110" height="32"/><text class="label" x="116" y="269">Pets</text>
+  <rect class="button" x="76" y="290" width="110" height="32"/><text class="label" x="104" y="311">Loadouts</text>
+  <rect class="button" x="76" y="332" width="110" height="32"/><text class="label" x="118" y="353">Sets</text>
+  <rect class="button" x="76" y="374" width="110" height="32"/><text class="label" x="114" y="395">Titles</text>
+
+  <rect class="panel" x="226" y="102" width="300" height="356"/>
+  <text class="gold" x="250" y="132">Player Preview</text>
+  <rect x="332" y="156" width="90" height="182" fill="#161b22" stroke="#435264"/>
+  <circle cx="377" cy="214" r="34" fill="#263342" stroke="#28a7d8"/>
+  <rect x="350" y="252" width="54" height="74" fill="#263342" stroke="#28a7d8"/>
+  <text class="muted" x="250" y="378">Persistent outfit preview</text>
+  <text class="muted" x="250" y="402">Reset / Undress / Apply All</text>
+
+  <rect class="panel" x="546" y="102" width="428" height="356"/>
+  <text class="gold" x="570" y="132">Database Browser</text>
+  <rect x="570" y="152" width="280" height="28" fill="#05080c" stroke="#273241"/>
+  <text class="muted" x="586" y="172">Search by name or ID</text>
+  <rect class="active" x="570" y="198" width="80" height="26"/><text class="label" x="603" y="216">All</text>
+  <rect class="button" x="660" y="198" width="80" height="26"/><text class="label" x="684" y="216">Head</text>
+  <rect class="button" x="750" y="198" width="88" height="26"/><text class="label" x="770" y="216">Shoulder</text>
+  <rect class="button" x="848" y="198" width="80" height="26"/><text class="label" x="874" y="216">Chest</text>
+
+  <g>
+    <rect x="570" y="250" width="88" height="80" fill="#171d25" stroke="#28a7d8"/>
+    <rect x="670" y="250" width="88" height="80" fill="#171d25" stroke="#28a7d8"/>
+    <rect x="770" y="250" width="88" height="80" fill="#171d25" stroke="#28a7d8"/>
+    <rect x="870" y="250" width="88" height="80" fill="#171d25" stroke="#28a7d8"/>
+    <rect x="570" y="342" width="88" height="80" fill="#171d25" stroke="#28a7d8"/>
+    <rect x="670" y="342" width="88" height="80" fill="#171d25" stroke="#28a7d8"/>
+    <rect x="770" y="342" width="88" height="80" fill="#171d25" stroke="#28a7d8"/>
+    <rect x="870" y="342" width="88" height="80" fill="#171d25" stroke="#28a7d8"/>
+  </g>
+  <text class="muted" x="650" y="446">Zoomed Transmorpher-style preview tiles</text>
+</svg>
