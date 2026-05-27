@@ -1,0 +1,20 @@
+## Interface: 30300
+## Title: WineMorpher Data
+## Notes: On-demand item, mount, pet, enchant, and preview data for WineMorpher
+## Author: Daniel + Codex
+## Version: 0.2.1
+## LoadOnDemand: 1
+
+Core.lua
+db\ItemsDB.lua
+db\ItemsAPI.lua
+db\MountsDB.lua
+db\PetsDB.lua
+db\HunterPetsDB.lua
+db\EnchantsDB.lua
+db\CreatureDisplayDB.lua
+db\ItemSetsDB.lua
+db\TitlesDB.lua
+db\PreviewSetupDB.lua
+db\PreviewSetupAPI.lua
+DataAPI.lua

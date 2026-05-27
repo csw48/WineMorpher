@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="360" viewBox="0 0 1040 360" role="img" aria-label="WineMorpher command flow">
+  <rect width="1040" height="360" fill="#0b0f14"/>
+  <text x="40" y="54" fill="#f5c842" font-family="Arial, sans-serif" font-size="28" font-weight="700">WineMorpher Command Flow</text>
+  <text x="40" y="84" fill="#9aa8b8" font-family="Arial, sans-serif" font-size="15">Addon UI queues appearance commands; native DLL applies local WoW 3.3.5a visual fields.</text>
+
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#28a7d8"/>
+    </marker>
+    <style>
+      .box { fill:#121821; stroke:#273241; stroke-width:2; rx:8; }
+      .accent { stroke:#28a7d8; }
+      .title { fill:#ffffff; font:700 18px Arial,sans-serif; }
+      .body { fill:#b8c5d4; font:14px Arial,sans-serif; }
+      .tag { fill:#f5c842; font:700 13px Arial,sans-serif; }
+      .line { stroke:#28a7d8; stroke-width:3; fill:none; marker-end:url(#arrow); }
+    </style>
+  </defs>
+
+  <rect class="box accent" x="44" y="132" width="210" height="120"/>
+  <text class="title" x="70" y="168">WoW Addon</text>
+  <text class="body" x="70" y="198">GUI, item database,</text>
+  <text class="body" x="70" y="220">preview tiles, slash cmds</text>
+  <text class="tag" x="70" y="242">/wmorph gui</text>
+
+  <path class="line" d="M260 192 H380"/>
+
+  <rect class="box" x="390" y="132" width="250" height="120"/>
+  <text class="title" x="420" y="168">Lua Command Queue</text>
+  <text class="body" x="420" y="198">WINEMORPHER_CMD</text>
+  <text class="body" x="420" y="220">STATUS, ITEM, MOUNT,</text>
+  <text class="body" x="420" y="242">ENCHANT, TITLE, RESET</text>
+
+  <path class="line" d="M646 192 H766"/>
+
+  <rect class="box accent" x="776" y="132" width="220" height="120"/>
+  <text class="title" x="806" y="168">Native DLL</text>
+  <text class="body" x="806" y="198">mods/winemorpher.dll</text>
+  <text class="body" x="806" y="220">writes local update fields</text>
+  <text class="tag" x="806" y="242">Wine/WoWSilicon</text>
+
+  <path d="M886 252 C886 310 150 310 150 256" stroke="#435264" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+  <text x="430" y="318" fill="#9aa8b8" font-family="Arial, sans-serif" font-size="14">DLL sets status globals back to Lua so the UI can show bridge state.</text>
+</svg>
