@@ -98,29 +98,19 @@ or:
 /wmorph gui
 ```
 
-## Important Database Note
+## Database
 
-The public GitHub release includes the working addon and DLL, but only empty database stubs.
-
-That means manual commands can work, but full Transmorpher-style browsing, item preview grids, mount lists, creature lists, set lists, and title lists will be incomplete until real redistributable database files are added.
-
-The reason is simple: the Transmorpher repository currently has no explicit public license, so its full data files are not bundled here. To ship a complete public release, WineMorpher needs one of these:
-
-- permission from the Transmorpher author to redistribute the data
-- a clean generated database pipeline from WoW client data
-- another licensed data source
-
-For local private testing, you can replace the stub files in:
+The public release includes the `WineMorpher_Data` database files used by the item, preview, mount, creature, set, pet, enchant, and title browsers.
 
 ```txt
 Interface/AddOns/WineMorpher_Data/db/
 ```
 
-with your own database files.
+The database and preview workflow are adapted from Kirazul's Transmorpher project with permission to redistribute the database files in this public GitHub repository and releases. Full credit and thanks to Kirazul.
 
 ## What Works
 
-Working in the current local development build:
+Working in the current build:
 
 - `/wmorph` GUI
 - DLL load/status bridge
@@ -131,15 +121,15 @@ Working in the current local development build:
 - hide/reset item slots
 - main-hand and off-hand enchant morphs
 - hunter pet morph and pet scale
-- loadout UI
-- set/title/mount/creature/item browsers when a real local database is installed
+- loadout save/load/import/export UI
+- minimap button and settings toggles
+- favorites for browsed database entries
+- item, set, title, mount, creature, pet, enchant, and preview browsers with bundled data
 
 Still being polished:
 
-- public redistributable database files
 - title reliability across different 3.3.5a clients/servers
 - complete set filters and previews
-- real in-game screenshots
 - mount/NPC preview models, which are unreliable with 3.3.5 `PlayerModel` under Wine
 
 ## Commands
@@ -229,7 +219,7 @@ Developer helper install:
 Build a release ZIP:
 
 ```sh
-scripts/package-release.sh v0.2.0
+scripts/package-release.sh v0.2.1
 ```
 
 ## How It Works
@@ -245,3 +235,5 @@ WineMorpher is local visual morphing, not server-side transmog. It is intended f
 ## Credits
 
 WineMorpher is inspired by Kirazul's Transmorpher UI/workflow and the WoWSilicon/Wine ecosystem.
+
+Database and preview data are adapted from Kirazul's Transmorpher project with permission to redistribute them in this public repository and GitHub releases.

@@ -3,7 +3,7 @@ local addonName = ...
 local WM = _G.WineMorpher or {}
 _G.WineMorpher = WM
 WM.addonName = addonName
-WM.version = "0.2.0"
+WM.version = "0.2.1"
 
 WINEMORPHER_CMD = WINEMORPHER_CMD or ""
 WINEMORPHER_DLL_LOADED = WINEMORPHER_DLL_LOADED or nil
@@ -210,6 +210,9 @@ local frame = CreateFrame("Frame")
 frame:RegisterEvent("PLAYER_LOGIN")
 frame:SetScript("OnEvent", function()
     WINEMORPHER_LUA_READY = "TRUE"
+    if WM.CreateMinimapButton then
+        WM.CreateMinimapButton()
+    end
     Print(addonName .. " ready. Type /wmorph status")
 end)
 frame:SetScript("OnUpdate", function()

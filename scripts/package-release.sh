@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="${1:-v0.2.0}"
+VERSION="${1:-v0.2.1}"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PACKAGE_NAME="WineMorpher-${VERSION}"
 STAGE="${ROOT}/dist/${PACKAGE_NAME}"
@@ -38,8 +38,8 @@ mods/winerosetta.dll
 
 6. Start WoW and type /wmorph or /wmorph gui.
 
-Note: this public package includes empty database stubs only. Manual commands can work,
-but full item/set/mount/creature/title browsers require redistributable database files.
+Note: this package includes the WineMorpher_Data database files used by the
+item/set/mount/creature/title browsers.
 EOF
 
 (

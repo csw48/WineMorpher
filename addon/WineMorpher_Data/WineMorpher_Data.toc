@@ -2,7 +2,7 @@
 ## Title: WineMorpher Data
 ## Notes: On-demand item, mount, pet, enchant, and preview data for WineMorpher
 ## Author: Daniel + Codex
-## Version: 0.1.0
+## Version: 0.2.1
 ## LoadOnDemand: 1
 
 Core.lua

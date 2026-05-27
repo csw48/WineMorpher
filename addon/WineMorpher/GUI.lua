@@ -439,6 +439,237 @@ local function EnsureLoadouts()
     return WineMorpherState.loadouts
 end
 
+local function EnsureSettings()
+    WineMorpherState.settings = WineMorpherState.settings or {}
+    if WineMorpherState.settings.showMinimap == nil then
+        WineMorpherState.settings.showMinimap = true
+    end
+    if WineMorpherState.settings.minimapAngle == nil then
+        WineMorpherState.settings.minimapAngle = 225
+    end
+    return WineMorpherState.settings
+end
+
+local function EnsureFavorites(kind)
+    WineMorpherState.favorites = WineMorpherState.favorites or {}
+    WineMorpherState.favorites[kind] = WineMorpherState.favorites[kind] or {}
+    return WineMorpherState.favorites[kind]
+end
+
+local function LowerText(text)
+    return string.lower(tostring(text or ""))
+end
+
+local function Trim(text)
+    text = tostring(text or "")
+    text = string.gsub(text, "^%s+", "")
+    text = string.gsub(text, "%s+$", "")
+    return text
+end
+
+local function FavoriteKey(entry, fallback)
+    if not entry then
+        return nil
+    end
+    local key = entry.id or entry.displayID or entry.name or fallback
+    if not key then
+        return nil
+    end
+    return tostring(key)
+end
+
+local function IsFavorite(kind, entry, fallback)
+    local key = FavoriteKey(entry, fallback)
+    if not key then
+        return false
+    end
+    return EnsureFavorites(kind)[key] ~= nil
+end
+
+local function ToggleFavorite(kind, entry, fallback)
+    local key = FavoriteKey(entry, fallback)
+    if not key then
+        return false
+    end
+
+    local favorites = EnsureFavorites(kind)
+    if favorites[key] then
+        favorites[key] = nil
+        WM.Print("Removed favorite.")
+        return false
+    end
+
+    local snapshot = {}
+    for k, v in pairs(entry or {}) do
+        if type(v) ~= "function" then
+            snapshot[k] = v
+        end
+    end
+    favorites[key] = snapshot
+    WM.Print("Added favorite.")
+    return true
+end
+
+local function FavoriteList(kind, query, predicate)
+    local list = {}
+    local q = LowerText(query)
+    for _, entry in pairs(EnsureFavorites(kind)) do
+        local search = LowerText(entry.name) .. " " .. tostring(entry.id or "") .. " " .. tostring(entry.displayID or "") .. " " .. LowerText(entry.slot) .. " " .. LowerText(entry.subclass) .. " " .. LowerText(entry.group) .. " " .. LowerText(entry.description)
+        if (q == "" or string.find(search, q, 1, true)) and (not predicate or predicate(entry)) then
+            table.insert(list, entry)
+        end
+    end
+    table.sort(list, function(a, b)
+        return LowerText(a.name or a.id or a.displayID) < LowerText(b.name or b.id or b.displayID)
+    end)
+    return list
+end
+
+local function SliceList(list, limit, offset)
+    local result = {}
+    local startIndex = (offset or 0) + 1
+    local stopIndex = math.min(#list, (offset or 0) + (limit or #list))
+    for index = startIndex, stopIndex do
+        table.insert(result, list[index])
+    end
+    return result, #list
+end
+
+local function ShowCopyDialog(title, text)
+    if not WM.copyDialog then
+        local dialog = CreateFrame("Frame", "WineMorpherCopyDialog", UIParent)
+        WM.copyDialog = dialog
+        dialog:SetWidth(420)
+        dialog:SetHeight(118)
+        dialog:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+        dialog:SetFrameStrata("TOOLTIP")
+        dialog:EnableMouse(true)
+        SkinPanel(dialog, C.panel2, C.accent)
+
+        dialog.title = Label(dialog, "", "GameFontNormal", C.gold)
+        dialog.title:SetPoint("TOPLEFT", dialog, "TOPLEFT", 12, -12)
+
+        dialog.input = MakeInput(dialog, 318, 24, "")
+        dialog.input:SetPoint("TOPLEFT", dialog, "TOPLEFT", 12, -46)
+
+        dialog.close = MakeButton(dialog, "Close", 70, 24)
+        dialog.close:SetPoint("LEFT", dialog.input, "RIGHT", 10, 0)
+        dialog.close:SetScript("OnClick", function()
+            dialog:Hide()
+        end)
+
+        local hint = Label(dialog, "Press Cmd+C / Ctrl+C to copy.", "GameFontHighlightSmall", {0.66, 0.72, 0.78, 1})
+        hint:SetPoint("TOPLEFT", dialog.input, "BOTTOMLEFT", 0, -10)
+        dialog:Hide()
+    end
+
+    WM.copyDialog.title:SetText(title or "Copy")
+    WM.copyDialog.input:SetText(text or "")
+    WM.copyDialog.input:HighlightText()
+    WM.copyDialog:Show()
+    WM.copyDialog.input:SetFocus()
+end
+
+local function ShowTextInputDialog(title, initialText, onAccept)
+    if not WM.textInputDialog then
+        local dialog = CreateFrame("Frame", "WineMorpherTextInputDialog", UIParent)
+        WM.textInputDialog = dialog
+        dialog:SetWidth(520)
+        dialog:SetHeight(136)
+        dialog:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+        dialog:SetFrameStrata("TOOLTIP")
+        dialog:EnableMouse(true)
+        SkinPanel(dialog, C.panel2, C.accent)
+
+        dialog.title = Label(dialog, "", "GameFontNormal", C.gold)
+        dialog.title:SetPoint("TOPLEFT", dialog, "TOPLEFT", 12, -12)
+
+        dialog.input = MakeInput(dialog, 486, 24, "")
+        dialog.input:SetPoint("TOPLEFT", dialog, "TOPLEFT", 12, -46)
+
+        dialog.ok = MakeButton(dialog, "OK", 78, 24)
+        dialog.ok:SetPoint("BOTTOMRIGHT", dialog, "BOTTOMRIGHT", -96, 12)
+        dialog.cancel = MakeButton(dialog, "Cancel", 78, 24)
+        dialog.cancel:SetPoint("BOTTOMRIGHT", dialog, "BOTTOMRIGHT", -12, 12)
+        dialog.cancel:SetScript("OnClick", function()
+            dialog:Hide()
+        end)
+        dialog:Hide()
+    end
+
+    WM.textInputDialog.title:SetText(title or "Input")
+    WM.textInputDialog.input:SetText(initialText or "")
+    WM.textInputDialog.input:HighlightText()
+    WM.textInputDialog.ok:SetScript("OnClick", function()
+        local value = WM.textInputDialog.input:GetText()
+        WM.textInputDialog:Hide()
+        if onAccept then
+            onAccept(value)
+        end
+    end)
+    WM.textInputDialog:Show()
+    WM.textInputDialog.input:SetFocus()
+end
+
+local function WowheadItemUrl(itemId)
+    return "https://www.wowhead.com/wotlk/item=" .. tostring(itemId)
+end
+
+local function EncodeLoadout(name, loadout)
+    local itemParts = {}
+    for slotName, itemId in pairs(loadout.items or {}) do
+        if tonumber(itemId) then
+            table.insert(itemParts, tostring(slotName) .. ":" .. tostring(itemId))
+        end
+    end
+    table.sort(itemParts)
+
+    local enchantParts = {}
+    for key, enchantId in pairs(loadout.enchants or {}) do
+        if tonumber(enchantId) then
+            table.insert(enchantParts, tostring(key) .. ":" .. tostring(enchantId))
+        end
+    end
+    table.sort(enchantParts)
+
+    return "WMLOADOUT;name=" .. tostring(name or "Imported") .. ";items=" .. table.concat(itemParts, ",") .. ";enchants=" .. table.concat(enchantParts, ",")
+end
+
+local function DecodeLoadout(text)
+    text = tostring(text or "")
+    if not string.find(text, "^WMLOADOUT;") then
+        return nil, "Invalid loadout string."
+    end
+
+    local loadout = {items = {}, enchants = {}}
+    local name = "Imported"
+    for part in string.gmatch(text, "([^;]+)") do
+        local key, value = string.match(part, "^([^=]+)=(.*)$")
+        if key == "name" then
+            name = Trim(value)
+        elseif key == "items" then
+            for pair in string.gmatch(value or "", "([^,]+)") do
+                local slotName, itemId = string.match(pair, "^([^:]+):(%d+)$")
+                if slotName and itemId then
+                    loadout.items[slotName] = tonumber(itemId)
+                end
+            end
+        elseif key == "enchants" then
+            for pair in string.gmatch(value or "", "([^,]+)") do
+                local enchantSlot, enchantId = string.match(pair, "^([^:]+):(%d+)$")
+                if enchantSlot and enchantId then
+                    loadout.enchants[enchantSlot] = tonumber(enchantId)
+                end
+            end
+        end
+    end
+
+    if name == "" then
+        name = "Imported"
+    end
+    return name, loadout
+end
+
 local function CopyNumberMap(source)
     local copy = {}
     for key, value in pairs(source or {}) do
@@ -466,6 +697,115 @@ local function BuildPreviewCommands(items, enchants)
     end
 
     return commands
+end
+
+local function Atan2(y, x)
+    if math.atan2 then
+        return math.atan2(y, x)
+    end
+    if x > 0 then
+        return math.atan(y / x)
+    elseif x < 0 and y >= 0 then
+        return math.atan(y / x) + math.pi
+    elseif x < 0 and y < 0 then
+        return math.atan(y / x) - math.pi
+    elseif x == 0 and y > 0 then
+        return math.pi / 2
+    elseif x == 0 and y < 0 then
+        return -math.pi / 2
+    end
+    return 0
+end
+
+local function PositionMinimapButton()
+    if not WM.minimapButton or not Minimap then
+        return
+    end
+
+    local settings = EnsureSettings()
+    local angle = math.rad(settings.minimapAngle or 225)
+    local radius = 80
+    WM.minimapButton:ClearAllPoints()
+    WM.minimapButton:SetPoint("CENTER", Minimap, "CENTER", math.cos(angle) * radius, math.sin(angle) * radius)
+end
+
+function WM.UpdateMinimapButton()
+    if not WM.minimapButton then
+        return
+    end
+    local settings = EnsureSettings()
+    if settings.showMinimap then
+        WM.minimapButton:Show()
+        PositionMinimapButton()
+    else
+        WM.minimapButton:Hide()
+    end
+end
+
+function WM.CreateMinimapButton()
+    if WM.minimapButton or not Minimap then
+        WM.UpdateMinimapButton()
+        return WM.minimapButton
+    end
+
+    local button = CreateFrame("Button", "WineMorpherMinimapButton", Minimap)
+    WM.minimapButton = button
+    button:SetWidth(32)
+    button:SetHeight(32)
+    button:SetFrameStrata("MEDIUM")
+    button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    button:RegisterForDrag("LeftButton")
+    button:SetHighlightTexture("Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight")
+
+    button.icon = button:CreateTexture(nil, "BACKGROUND")
+    button.icon:SetPoint("TOPLEFT", button, "TOPLEFT", 6, -6)
+    button.icon:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -6, 6)
+    button.icon:SetTexture("Interface\\Icons\\INV_Misc_Orb_05")
+
+    button.overlay = button:CreateTexture(nil, "OVERLAY")
+    button.overlay:SetAllPoints(button)
+    button.overlay:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
+
+    button:SetScript("OnClick", function(self, mouseButton)
+        if mouseButton == "RightButton" then
+            local frame = WM.CreateGUI()
+            frame:Show()
+            if WM.ShowGUIPage then
+                WM.ShowGUIPage("settings")
+            end
+        else
+            WM.ToggleGUI()
+        end
+    end)
+    button:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_LEFT")
+        GameTooltip:AddLine("WineMorpher", C.gold[1], C.gold[2], C.gold[3])
+        GameTooltip:AddLine("Left click: open/close", 0.82, 0.88, 0.94)
+        GameTooltip:AddLine("Right click: settings", 0.82, 0.88, 0.94)
+        GameTooltip:Show()
+    end)
+    button:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
+    button:SetScript("OnDragStart", function(self)
+        self:SetScript("OnUpdate", function()
+            local mx, my = Minimap:GetCenter()
+            local px, py = GetCursorPosition()
+            local scale = Minimap:GetEffectiveScale()
+            px = px / scale
+            py = py / scale
+            local angle = math.deg(Atan2(py - my, px - mx))
+            EnsureSettings().minimapAngle = angle
+            PositionMinimapButton()
+        end)
+    end)
+    button:SetScript("OnDragStop", function(self)
+        self:SetScript("OnUpdate", nil)
+        PositionMinimapButton()
+    end)
+
+    WM.UpdateMinimapButton()
+    return button
 end
 
 local function MakePage(parent)
@@ -578,6 +918,7 @@ local function CreateMountPage(parent)
     local selectedMount = nil
     local dataLoaded = false
     local activeGroup = "ALL"
+    local favoritesOnly = false
     local pageIndex = 1
     local perPage = 12
     local matchedCount = 0
@@ -613,6 +954,8 @@ local function CreateMountPage(parent)
     search:SetPoint("TOPLEFT", db, "TOPLEFT", 12, -28)
     local dbCount = Label(db, "Open tab to load data", "GameFontHighlightSmall", {0.66, 0.72, 0.78, 1})
     dbCount:SetPoint("LEFT", search, "RIGHT", 10, 0)
+    local favoritesButton = MakeButton(db, "Favorites", 78, 24)
+    favoritesButton:SetPoint("TOPRIGHT", db, "TOPRIGHT", -12, -28)
     local groupButtons = {}
     local groupNames = {"All", "Ground", "Flying", "PvP", "Raid", "Dungeon", "Horses", "Rams", "Skeletal Horse", "Sabers", "Wolves", "Raptors", "Kodos", "Drakes", "Mammoths", "Bears", "Talbuks", "Elekks", "Hawkstriders", "Mechanostriders"}
     for i, groupName in ipairs(groupNames) do
@@ -638,6 +981,7 @@ local function CreateMountPage(parent)
         end
     end
 
+    local SearchMounts
     local function BuildMountRows()
         for _, row in ipairs(rowButtons) do
             row:Hide()
@@ -648,6 +992,7 @@ local function CreateMountPage(parent)
             local row = rowButtons[i]
             if not row then
                 row = MakeButton(db, "", 450, 22)
+                row:RegisterForClicks("LeftButtonUp", "RightButtonUp")
                 row:SetPoint("TOPLEFT", db, "TOPLEFT", 12, -184 - (i - 1) * 23)
                 row.name = Label(row, "", "GameFontHighlightSmall", {0.92, 0.94, 0.96, 1})
                 row.name:SetPoint("LEFT", row, "LEFT", 8, 0)
@@ -661,14 +1006,23 @@ local function CreateMountPage(parent)
             if entry then
                 row.entry = entry
                 row.name:SetText(entry.name)
-                row.meta:SetText(tostring(entry.group or entry.mountType) .. "  #" .. tostring(entry.displayID))
-                row:SetScript("OnClick", function(self) SelectMount(self.entry) end)
+                local star = IsFavorite("mounts", entry) and "* " or ""
+                row.meta:SetText(star .. tostring(entry.group or entry.mountType) .. "  #" .. tostring(entry.displayID))
+                row:SetScript("OnClick", function(self, mouseButton)
+                    if mouseButton == "RightButton" then
+                        ToggleFavorite("mounts", self.entry)
+                        SearchMounts()
+                    else
+                        SelectMount(self.entry)
+                    end
+                end)
                 row:SetScript("OnEnter", function(self)
                     SetPanelColor(self, C.hover)
                     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
                     GameTooltip:AddLine(self.entry.name)
                     GameTooltip:AddLine("Display ID: " .. tostring(self.entry.displayID), 1, 1, 1)
                     GameTooltip:AddLine("Group: " .. tostring(self.entry.group or "Mount"), 0.7, 0.8, 0.9)
+                    GameTooltip:AddLine("Right click: favorite", C.gold[1], C.gold[2], C.gold[3])
                     GameTooltip:Show()
                 end)
                 row:SetScript("OnLeave", function(self)
@@ -680,7 +1034,7 @@ local function CreateMountPage(parent)
         end
     end
 
-    local function SearchMounts()
+    SearchMounts = function()
         local data = GetData()
         if not data or not data.SearchMounts then
             dbCount:SetText("WineMorpher_Data not loaded")
@@ -689,20 +1043,44 @@ local function CreateMountPage(parent)
 
         dataLoaded = true
         local total
-        results, total, matchedCount = data.SearchMounts(search:GetText(), activeGroup, perPage, (pageIndex - 1) * perPage)
+        if favoritesOnly then
+            local list = FavoriteList("mounts", search:GetText(), function(entry)
+                return activeGroup == "ALL" or entry.group == activeGroup or entry.mountType == activeGroup
+            end)
+            results, matchedCount = SliceList(list, perPage, (pageIndex - 1) * perPage)
+            total = #list
+        else
+            results, total, matchedCount = data.SearchMounts(search:GetText(), activeGroup, perPage, (pageIndex - 1) * perPage)
+        end
         dbCount:SetText(tostring(matchedCount or #results) .. " found / " .. tostring(total) .. " mounts")
         local pages = math.max(1, math.ceil((matchedCount or 0) / perPage))
         if pageIndex > pages then
             pageIndex = pages
-            results, total, matchedCount = data.SearchMounts(search:GetText(), activeGroup, perPage, (pageIndex - 1) * perPage)
+            if favoritesOnly then
+                local list = FavoriteList("mounts", search:GetText(), function(entry)
+                    return activeGroup == "ALL" or entry.group == activeGroup or entry.mountType == activeGroup
+                end)
+                results, matchedCount = SliceList(list, perPage, (pageIndex - 1) * perPage)
+                total = #list
+            else
+                results, total, matchedCount = data.SearchMounts(search:GetText(), activeGroup, perPage, (pageIndex - 1) * perPage)
+            end
         end
         pageLabel:SetText("Page " .. tostring(pageIndex) .. "/" .. tostring(pages))
+        favoritesButton.isSelected = favoritesOnly
+        SetPanelColor(favoritesButton, favoritesOnly and C.active or C.button)
         for _, button in ipairs(groupButtons) do
             button.isSelected = button.groupName == activeGroup
             SetPanelColor(button, button.isSelected and C.active or C.button)
         end
         BuildMountRows()
     end
+
+    favoritesButton:SetScript("OnClick", function()
+        favoritesOnly = not favoritesOnly
+        pageIndex = 1
+        SearchMounts()
+    end)
 
     for _, button in ipairs(groupButtons) do
         button:SetScript("OnClick", function(self)
@@ -818,8 +1196,11 @@ local function CreateMorphPage(parent)
     local perPage = 16
     local matchedCount = 0
     local dataLoaded = false
+    local favoritesOnly = false
     local pageLabel = Label(db, "Page 1/1", "GameFontHighlightSmall", C.gold)
     pageLabel:SetPoint("BOTTOM", db, "BOTTOM", 0, 10)
+    local favoritesButton = MakeButton(db, "Favorites", 78, 24)
+    favoritesButton:SetPoint("TOPRIGHT", db, "TOPRIGHT", -12, -28)
     local prevButton = MakeButton(db, "<", 32, 22)
     prevButton:SetPoint("RIGHT", pageLabel, "LEFT", -10, 0)
     local nextButton = MakeButton(db, ">", 32, 22)
@@ -829,6 +1210,7 @@ local function CreateMorphPage(parent)
         displayInput:SetText(tostring(entry.displayID))
     end
 
+    local SearchCreatures
     local function BuildRows()
         for _, row in ipairs(rows) do row:Hide() end
         for i = 1, perPage do
@@ -836,6 +1218,7 @@ local function CreateMorphPage(parent)
             local row = rows[i]
             if not row then
                 row = MakeButton(db, "", 450, 22)
+                row:RegisterForClicks("LeftButtonUp", "RightButtonUp")
                 row:SetPoint("TOPLEFT", db, "TOPLEFT", 12, -62 - (i - 1) * 24)
                 row.name = Label(row, "", "GameFontHighlightSmall", {0.92, 0.94, 0.96, 1})
                 row.name:SetPoint("LEFT", row, "LEFT", 8, 0)
@@ -843,19 +1226,26 @@ local function CreateMorphPage(parent)
                 row.name:SetJustifyH("LEFT")
                 row.meta = Label(row, "", "GameFontHighlightSmall", {0.58, 0.66, 0.72, 1})
                 row.meta:SetPoint("RIGHT", row, "RIGHT", -8, 0)
-                row:SetScript("OnClick", function(self) SelectCreature(self.entry) end)
+                row:SetScript("OnClick", function(self, mouseButton)
+                    if mouseButton == "RightButton" then
+                        ToggleFavorite("creatures", self.entry)
+                        SearchCreatures()
+                    else
+                        SelectCreature(self.entry)
+                    end
+                end)
                 rows[i] = row
             end
             if entry then
                 row.entry = entry
                 row.name:SetText(entry.name)
-                row.meta:SetText("#" .. tostring(entry.displayID))
+                row.meta:SetText((IsFavorite("creatures", entry) and "* " or "") .. "#" .. tostring(entry.displayID))
                 row:Show()
             end
         end
     end
 
-    local function SearchCreatures()
+    SearchCreatures = function()
         local data = GetData()
         if not data or not data.SearchCreatureDisplays then
             countLabel:SetText("WineMorpher_Data not loaded")
@@ -863,11 +1253,19 @@ local function CreateMorphPage(parent)
         end
         dataLoaded = true
         local total
-        results, total, matchedCount = data.SearchCreatureDisplays(search:GetText(), perPage, (pageIndex - 1) * perPage)
+        if favoritesOnly then
+            local list = FavoriteList("creatures", search:GetText())
+            results, matchedCount = SliceList(list, perPage, (pageIndex - 1) * perPage)
+            total = #list
+        else
+            results, total, matchedCount = data.SearchCreatureDisplays(search:GetText(), perPage, (pageIndex - 1) * perPage)
+        end
         local pages = math.max(1, math.ceil((matchedCount or 0) / perPage))
         if pageIndex > pages then pageIndex = pages end
         countLabel:SetText(tostring(matchedCount or 0) .. " found / " .. tostring(total or 0))
         pageLabel:SetText("Page " .. tostring(pageIndex) .. "/" .. tostring(pages))
+        favoritesButton.isSelected = favoritesOnly
+        SetPanelColor(favoritesButton, favoritesOnly and C.active or C.button)
         BuildRows()
     end
 
@@ -889,6 +1287,11 @@ local function CreateMorphPage(parent)
             pageIndex = pageIndex + 1
             SearchCreatures()
         end
+    end)
+    favoritesButton:SetScript("OnClick", function()
+        favoritesOnly = not favoritesOnly
+        pageIndex = 1
+        SearchCreatures()
     end)
 
     displayInput:SetScript("OnEnterPressed", function(self)
@@ -954,6 +1357,7 @@ local function CreatePreviewPage(parent)
     local activeSubclass = "All"
     local activeMode = "items"
     local activeEnchantHand = "mh"
+    local favoritesOnly = false
     WineMorpherState.previewItems = WineMorpherState.previewItems or {}
     WineMorpherState.previewEnchants = WineMorpherState.previewEnchants or {}
     local previewItems = WineMorpherState.previewItems
@@ -1037,6 +1441,8 @@ local function CreatePreviewPage(parent)
     searchInput:SetPoint("TOPLEFT", browser, "TOPLEFT", 12, -28)
     local countLabel = Label(browser, "Loading data...", "GameFontHighlightSmall", {0.66, 0.72, 0.78, 1})
     countLabel:SetPoint("LEFT", searchInput, "RIGHT", 10, 0)
+    local favoritesButton = MakeButton(browser, "Favorites", 78, 24)
+    favoritesButton:SetPoint("TOPRIGHT", browser, "TOPRIGHT", -12, -28)
 
     local slotBar = CreateFrame("Frame", nil, browser)
     slotBar:SetPoint("TOPLEFT", browser, "TOPLEFT", 12, -62)
@@ -1365,12 +1771,30 @@ local function CreatePreviewPage(parent)
 
         dataLoaded = true
         if activeMode == "enchants" then
-            results, totalCount, matchedCount = data.SearchEnchants(searchInput:GetText(), perPage, (pageIndex - 1) * perPage)
+            if favoritesOnly then
+                local list = FavoriteList("enchants", searchInput:GetText())
+                results, matchedCount = SliceList(list, perPage, (pageIndex - 1) * perPage)
+                totalCount = #list
+            else
+                results, totalCount, matchedCount = data.SearchEnchants(searchInput:GetText(), perPage, (pageIndex - 1) * perPage)
+            end
             countLabel:SetText(tostring(matchedCount) .. " enchants / " .. tostring(totalCount) .. " indexed")
         else
-            results, totalCount, matchedCount = data.SearchItems(searchInput:GetText(), activeSlot, activeSubclass, perPage, (pageIndex - 1) * perPage)
+            if favoritesOnly then
+                local list = FavoriteList("items", searchInput:GetText(), function(entry)
+                    local slotOk = activeSlot == "All" or entry.slot == activeSlot
+                    local subclassOk = activeSubclass == "All" or entry.subclass == activeSubclass
+                    return slotOk and subclassOk
+                end)
+                results, matchedCount = SliceList(list, perPage, (pageIndex - 1) * perPage)
+                totalCount = #list
+            else
+                results, totalCount, matchedCount = data.SearchItems(searchInput:GetText(), activeSlot, activeSubclass, perPage, (pageIndex - 1) * perPage)
+            end
             countLabel:SetText(tostring(matchedCount) .. " results / " .. tostring(totalCount) .. " indexed")
         end
+        favoritesButton.isSelected = favoritesOnly
+        SetPanelColor(favoritesButton, favoritesOnly and C.active or C.button)
 
         for i, cell in ipairs(gridCells) do
             local entry = results[i]
@@ -1379,13 +1803,13 @@ local function CreatePreviewPage(parent)
                 cell:Show()
                 if activeMode == "enchants" then
                     cell.title:SetText(entry.name)
-                    cell.meta:SetText("enchant #" .. tostring(entry.id))
+                    cell.meta:SetText((IsFavorite("enchants", entry) and "* " or "") .. "enchant #" .. tostring(entry.id))
                     SetPanelBorderColor(cell, C.soft)
                     cell.model:Show()
                     SetupEnchantModel(cell.model, entry)
                 else
                     cell.title:SetText(StripColor(entry.name))
-                    cell.meta:SetText(tostring(entry.subclass) .. " #" .. tostring(entry.id))
+                    cell.meta:SetText((IsFavorite("items", entry) and "* " or "") .. tostring(entry.subclass) .. " #" .. tostring(entry.id))
                     SetPanelBorderColor(cell, ColorFromItemName(entry.name))
                     cell.model:Show()
                     SetupSingleModel(cell.model, entry)
@@ -1518,8 +1942,15 @@ local function CreatePreviewPage(parent)
         end
     end)
 
+    favoritesButton:SetScript("OnClick", function()
+        favoritesOnly = not favoritesOnly
+        pageIndex = 1
+        Search()
+    end)
+
     for i = 1, perPage do
         local cell = CreateFrame("Button", nil, grid)
+        cell:RegisterForClicks("LeftButtonUp", "RightButtonUp")
         cell:SetWidth(116)
         cell:SetHeight(96)
         cell.normalColor = C.panel2
@@ -1544,8 +1975,17 @@ local function CreatePreviewPage(parent)
         cell.meta:SetWidth(106)
         cell.meta:SetJustifyH("LEFT")
         cell.meta:Hide()
-        cell:SetScript("OnClick", function(self)
+        cell:SetScript("OnClick", function(self, mouseButton)
             if not self.entry then
+                return
+            end
+            if mouseButton == "RightButton" then
+                ToggleFavorite(activeMode == "enchants" and "enchants" or "items", self.entry)
+                Search()
+                return
+            end
+            if activeMode == "items" and type(IsShiftKeyDown) == "function" and IsShiftKeyDown() then
+                ShowCopyDialog("Wowhead item URL", WowheadItemUrl(self.entry.id))
                 return
             end
             if activeMode == "enchants" then
@@ -1563,11 +2003,14 @@ local function CreatePreviewPage(parent)
                     GameTooltip:AddLine(self.entry.name or "Enchant", C.gold[1], C.gold[2], C.gold[3])
                     GameTooltip:AddLine("Enchant ID: " .. tostring(self.entry.id), 1, 1, 1)
                     GameTooltip:AddLine("Target: " .. string.upper(activeEnchantHand), 0.7, 0.8, 0.9)
+                    GameTooltip:AddLine("Right click: favorite", C.gold[1], C.gold[2], C.gold[3])
                 else
                     GameTooltip:AddLine(self.entry.name or "Item")
                     GameTooltip:AddLine("Item ID: " .. tostring(self.entry.id), 1, 1, 1)
                     GameTooltip:AddLine("Slot: " .. tostring(self.entry.slot), 0.7, 0.8, 0.9)
                     GameTooltip:AddLine("Subclass: " .. tostring(self.entry.subclass), 0.7, 0.8, 0.9)
+                    GameTooltip:AddLine("Shift click: copy Wowhead URL", C.gold[1], C.gold[2], C.gold[3])
+                    GameTooltip:AddLine("Right click: favorite", C.gold[1], C.gold[2], C.gold[3])
                     if self.entry.names and #self.entry.names > 1 then
                         GameTooltip:AddLine("Same appearance:", 0.55, 0.62, 0.70)
                         for i = 2, math.min(#self.entry.names, 5) do
@@ -1724,6 +2167,8 @@ local function CreateLoadoutsPage(parent)
     updateButton:SetPoint("TOPLEFT", list, "TOPLEFT", 12, -62)
     local deleteButton = MakeButton(list, "Delete", 72, 24)
     deleteButton:SetPoint("LEFT", updateButton, "RIGHT", 8, 0)
+    local importButton = MakeButton(list, "Import", 72, 24)
+    importButton:SetPoint("LEFT", deleteButton, "RIGHT", 8, 0)
 
     local detail = Section(page, "Loadout Preview", 272, 0, 560, 498)
     local selectedTitle = Label(detail, "No set selected", "GameFontNormal", C.gold)
@@ -1735,6 +2180,8 @@ local function CreateLoadoutsPage(parent)
     loadPreviewButton:SetPoint("TOPRIGHT", detail, "TOPRIGHT", -12, -30)
     local applyButton = MakeButton(detail, "Apply Set", 92, 24)
     applyButton:SetPoint("RIGHT", loadPreviewButton, "LEFT", -8, 0)
+    local exportButton = MakeButton(detail, "Export", 78, 24)
+    exportButton:SetPoint("RIGHT", applyButton, "LEFT", -8, 0)
 
     local function SortedLoadoutNames()
         local names = {}
@@ -1925,6 +2372,30 @@ local function CreateLoadoutsPage(parent)
         Refresh()
     end)
 
+    importButton:SetScript("OnClick", function()
+        ShowTextInputDialog("Import WineMorpher loadout", "", function(value)
+            local name, loadoutOrError = DecodeLoadout(value)
+            if not name then
+                WM.Print(loadoutOrError or "Invalid loadout string.")
+                return
+            end
+            loadouts[name] = loadoutOrError
+            selectedName = name
+            nameInput:SetText(name)
+            WM.Print("Imported loadout: " .. name)
+            Refresh()
+        end)
+    end)
+
+    exportButton:SetScript("OnClick", function()
+        local loadout = selectedName and loadouts[selectedName]
+        if not loadout then
+            WM.Print("Select a loadout first.")
+            return
+        end
+        ShowCopyDialog("Export loadout", EncodeLoadout(selectedName, loadout))
+    end)
+
     loadPreviewButton:SetScript("OnClick", function()
         local loadout = selectedName and loadouts[selectedName]
         if not loadout then
@@ -1964,10 +2435,13 @@ local function CreateSetsPage(parent)
     local pageIndex = 1
     local perPage = 11
     local matchedCount = 0
+    local favoritesOnly = false
 
     local list = Section(page, "Item Sets", 0, 0, 320, 498)
     local search = MakeInput(list, 188, 24, "")
     search:SetPoint("TOPLEFT", list, "TOPLEFT", 12, -28)
+    local favoritesButton = MakeButton(list, "Favorites", 78, 24)
+    favoritesButton:SetPoint("TOPRIGHT", list, "TOPRIGHT", -12, -28)
     local classButtons = {}
     local classes = {{"ALL", "All"}, {"WARRIOR", "Warrior"}, {"PALADIN", "Paladin"}, {"HUNTER", "Hunter"}, {"ROGUE", "Rogue"}, {"PRIEST", "Priest"}, {"DEATHKNIGHT", "DK"}, {"SHAMAN", "Shaman"}, {"MAGE", "Mage"}, {"WARLOCK", "Warlock"}, {"DRUID", "Druid"}}
     for i, item in ipairs(classes) do
@@ -2028,6 +2502,7 @@ local function CreateSetsPage(parent)
         desc:SetText(setData.description or "")
     end
 
+    local SearchSets
     local function BuildRows()
         for _, row in ipairs(rows) do row:Hide() end
         for i = 1, perPage do
@@ -2035,6 +2510,7 @@ local function CreateSetsPage(parent)
             local row = rows[i]
             if not row then
                 row = MakeButton(list, "", 292, 24)
+                row:RegisterForClicks("LeftButtonUp", "RightButtonUp")
                 row:SetPoint("TOPLEFT", list, "TOPLEFT", 12, -156 - (i - 1) * 26)
                 row.icon = row:CreateTexture(nil, "ARTWORK")
                 row.icon:SetWidth(20); row.icon:SetHeight(20)
@@ -2045,12 +2521,19 @@ local function CreateSetsPage(parent)
                 row.name:SetJustifyH("LEFT")
                 row.meta = Label(row, "", "GameFontHighlightSmall", {0.58, 0.66, 0.72, 1})
                 row.meta:SetPoint("RIGHT", row, "RIGHT", -8, 0)
-                row:SetScript("OnClick", function(self) SelectSet(self.setData) end)
+                row:SetScript("OnClick", function(self, mouseButton)
+                    if mouseButton == "RightButton" then
+                        ToggleFavorite("sets", self.setData, self.setData and self.setData.name)
+                        SearchSets()
+                    else
+                        SelectSet(self.setData)
+                    end
+                end)
                 rows[i] = row
             end
             if setData then
                 row.setData = setData
-                row.name:SetText(setData.name)
+                row.name:SetText((IsFavorite("sets", setData, setData.name) and "* " or "") .. tostring(setData.name))
                 row.meta:SetText(setData.description or "")
                 local iconItem = setData.items and setData.items[1] and setData.items[1].itemId
                 row.icon:SetTexture(iconItem and type(GetItemIcon) == "function" and GetItemIcon(iconItem) or "Interface\\Icons\\INV_Chest_Plate04")
@@ -2059,7 +2542,7 @@ local function CreateSetsPage(parent)
         end
     end
 
-    local function SearchSets()
+    SearchSets = function()
         local data = GetData()
         if not data or not data.SearchItemSets then
             countLabel:SetText("WineMorpher_Data not loaded")
@@ -2067,11 +2550,21 @@ local function CreateSetsPage(parent)
         end
         dataLoaded = true
         local total
-        results, total, matchedCount = data.SearchItemSets(search:GetText(), activeClass, perPage, (pageIndex - 1) * perPage)
+        if favoritesOnly then
+            local list = FavoriteList("sets", search:GetText(), function(entry)
+                return activeClass == "ALL" or entry.class == activeClass
+            end)
+            results, matchedCount = SliceList(list, perPage, (pageIndex - 1) * perPage)
+            total = #list
+        else
+            results, total, matchedCount = data.SearchItemSets(search:GetText(), activeClass, perPage, (pageIndex - 1) * perPage)
+        end
         local pages = math.max(1, math.ceil((matchedCount or 0) / perPage))
         if pageIndex > pages then pageIndex = pages end
         countLabel:SetText("Available Sets: " .. tostring(matchedCount or 0))
         pageLabel:SetText("Page " .. tostring(pageIndex) .. "/" .. tostring(pages))
+        favoritesButton.isSelected = favoritesOnly
+        SetPanelColor(favoritesButton, favoritesOnly and C.active or C.button)
         for _, button in ipairs(classButtons) do
             button.isSelected = button.classKey == activeClass
             SetPanelColor(button, button.isSelected and C.active or C.button)
@@ -2086,6 +2579,11 @@ local function CreateSetsPage(parent)
             SearchSets()
         end)
     end
+    favoritesButton:SetScript("OnClick", function()
+        favoritesOnly = not favoritesOnly
+        pageIndex = 1
+        SearchSets()
+    end)
     search:SetScript("OnTextChanged", function()
         if dataLoaded then pageIndex = 1; SearchSets() end
     end)
@@ -2122,6 +2620,7 @@ local function CreateTitlesPage(parent)
     local perPage = 16
     local matched = 0
     local dataLoaded = false
+    local favoritesOnly = false
 
     local list = Section(page, "Titles", 0, 0, 540, 498)
     local search = MakeInput(list, 240, 24, "")
@@ -2130,6 +2629,8 @@ local function CreateTitlesPage(parent)
     countLabel:SetPoint("LEFT", search, "RIGHT", 10, 0)
     local reset = MakeButton(list, "Reset", 72, 24)
     reset:SetPoint("TOPRIGHT", list, "TOPRIGHT", -12, -28)
+    local favoritesButton = MakeButton(list, "Favorites", 78, 24)
+    favoritesButton:SetPoint("RIGHT", reset, "LEFT", -8, 0)
     local pageLabel = Label(list, "Page 1/1", "GameFontHighlightSmall", C.gold)
     pageLabel:SetPoint("BOTTOM", list, "BOTTOM", 0, 12)
     local prev = MakeButton(list, "<", 34, 22)
@@ -2145,6 +2646,7 @@ local function CreateTitlesPage(parent)
         Send("TITLE:" .. tostring(entry.id))
     end
 
+    local SearchTitles
     local function BuildRows()
         for _, row in ipairs(rows) do row:Hide() end
         for i = 1, perPage do
@@ -2152,6 +2654,7 @@ local function CreateTitlesPage(parent)
             local row = rows[i]
             if not row then
                 row = MakeButton(list, "", 500, 22)
+                row:RegisterForClicks("LeftButtonUp", "RightButtonUp")
                 row:SetPoint("TOPLEFT", list, "TOPLEFT", 12, -64 - (i - 1) * 24)
                 row.name = Label(row, "", "GameFontHighlightSmall", {0.92, 0.94, 0.96, 1})
                 row.name:SetPoint("LEFT", row, "LEFT", 8, 0)
@@ -2159,19 +2662,26 @@ local function CreateTitlesPage(parent)
                 row.name:SetJustifyH("LEFT")
                 row.id = Label(row, "", "GameFontHighlightSmall", {0.58, 0.66, 0.72, 1})
                 row.id:SetPoint("RIGHT", row, "RIGHT", -8, 0)
-                row:SetScript("OnClick", function(self) ApplyTitle(self.entry) end)
+                row:SetScript("OnClick", function(self, mouseButton)
+                    if mouseButton == "RightButton" then
+                        ToggleFavorite("titles", self.entry)
+                        SearchTitles()
+                    else
+                        ApplyTitle(self.entry)
+                    end
+                end)
                 rows[i] = row
             end
             if entry then
                 row.entry = entry
-                row.name:SetText(entry.name)
+                row.name:SetText((IsFavorite("titles", entry) and "* " or "") .. tostring(entry.name))
                 row.id:SetText("#" .. tostring(entry.id))
                 row:Show()
             end
         end
     end
 
-    local function SearchTitles()
+    SearchTitles = function()
         local data = GetData()
         if not data or not data.SearchTitles then
             countLabel:SetText("WineMorpher_Data not loaded")
@@ -2179,11 +2689,19 @@ local function CreateTitlesPage(parent)
         end
         dataLoaded = true
         local total
-        results, total, matched = data.SearchTitles(search:GetText(), perPage, (pageIndex - 1) * perPage)
+        if favoritesOnly then
+            local list = FavoriteList("titles", search:GetText())
+            results, matched = SliceList(list, perPage, (pageIndex - 1) * perPage)
+            total = #list
+        else
+            results, total, matched = data.SearchTitles(search:GetText(), perPage, (pageIndex - 1) * perPage)
+        end
         local pages = math.max(1, math.ceil((matched or 0) / perPage))
         if pageIndex > pages then pageIndex = pages end
         countLabel:SetText(tostring(matched or 0) .. " found / " .. tostring(total or 0))
         pageLabel:SetText("Page " .. tostring(pageIndex) .. "/" .. tostring(pages))
+        favoritesButton.isSelected = favoritesOnly
+        SetPanelColor(favoritesButton, favoritesOnly and C.active or C.button)
         BuildRows()
     end
 
@@ -2205,6 +2723,11 @@ local function CreateTitlesPage(parent)
         if type(SetCurrentTitle) == "function" then pcall(SetCurrentTitle, 0) end
         Send("TITLE_RESET")
     end)
+    favoritesButton:SetScript("OnClick", function()
+        favoritesOnly = not favoritesOnly
+        pageIndex = 1
+        SearchTitles()
+    end)
     page:SetScript("OnShow", function()
         if not dataLoaded then SearchTitles() end
     end)
@@ -2223,7 +2746,7 @@ end
 
 local function CreateSettingsPage(parent)
     local page = MakePage(parent)
-    local section = Section(page, "Settings", 0, 0, 500, 184)
+    local section = Section(page, "Status", 0, 0, 500, 184)
     local elvui = type(_G.ElvUI) == "table" and "detected" or "not detected"
     local media = RefreshMedia()
     local lsm = media.lsm and "detected" or "not detected"
@@ -2253,6 +2776,51 @@ local function CreateSettingsPage(parent)
             Send("STATUS")
         end
     end)
+
+    local options = Section(page, "Options", 0, -196, 500, 154)
+    local chatButton = MakeButton(options, "", 178, 24)
+    chatButton:SetPoint("TOPLEFT", options, "TOPLEFT", 12, -36)
+    local minimapButton = MakeButton(options, "", 178, 24)
+    minimapButton:SetPoint("TOPLEFT", options, "TOPLEFT", 12, -68)
+    local resetMinimap = MakeButton(options, "Reset Minimap Pos", 132, 24)
+    resetMinimap:SetPoint("TOPLEFT", options, "TOPLEFT", 12, -100)
+
+    local optionHint = Label(options, "Changes are saved per character.", "GameFontHighlightSmall", {0.66, 0.72, 0.78, 1})
+    optionHint:SetPoint("TOPLEFT", options, "TOPLEFT", 210, -40)
+    optionHint:SetWidth(260)
+    optionHint:SetJustifyH("LEFT")
+
+    local function RefreshOptions()
+        local settings = EnsureSettings()
+        chatButton:SetText((WineMorpherState.chatMessages and "Chat: On" or "Chat: Off"))
+        minimapButton:SetText((settings.showMinimap and "Minimap: On" or "Minimap: Off"))
+        chatButton.isSelected = WineMorpherState.chatMessages
+        minimapButton.isSelected = settings.showMinimap
+        SetPanelColor(chatButton, chatButton.isSelected and C.active or C.button)
+        SetPanelColor(minimapButton, minimapButton.isSelected and C.active or C.button)
+    end
+
+    chatButton:SetScript("OnClick", function()
+        WineMorpherState.chatMessages = not WineMorpherState.chatMessages
+        RefreshOptions()
+    end)
+    minimapButton:SetScript("OnClick", function()
+        local settings = EnsureSettings()
+        settings.showMinimap = not settings.showMinimap
+        if WM.UpdateMinimapButton then
+            WM.UpdateMinimapButton()
+        end
+        RefreshOptions()
+    end)
+    resetMinimap:SetScript("OnClick", function()
+        EnsureSettings().minimapAngle = 225
+        if WM.UpdateMinimapButton then
+            WM.UpdateMinimapButton()
+        end
+    end)
+
+    page:SetScript("OnShow", RefreshOptions)
+    RefreshOptions()
 
     return page
 end
@@ -2297,7 +2865,7 @@ function WM.CreateGUI()
     local title = Label(titleBar, "WineMorpher", "GameFontNormalLarge", C.gold)
     title:SetPoint("LEFT", titleBar, "LEFT", 14, 1)
 
-    local subtitle = Label(titleBar, "v" .. tostring(WM.version or "0.2.0"), "GameFontHighlightSmall", {0.62, 0.66, 0.70, 1})
+    local subtitle = Label(titleBar, "v" .. tostring(WM.version or "0.2.1"), "GameFontHighlightSmall", {0.62, 0.66, 0.70, 1})
     subtitle:SetPoint("LEFT", title, "RIGHT", 8, -1)
 
     local close = MakeButton(titleBar, "X", 28, 24)
@@ -2362,6 +2930,7 @@ function WM.CreateGUI()
             end
         end
     end
+    WM.ShowGUIPage = ShowPage
 
     for index, item in ipairs(navItems) do
         local pageName = item[1]
@@ -2404,3 +2973,5 @@ function WM.ToggleGUI()
         frame:Show()
     end
 end
+
+WM.CreateMinimapButton()
