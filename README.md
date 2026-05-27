@@ -1,13 +1,11 @@
 # WineMorpher
 
 <p align="center">
-  <a href="https://www.buymeacoffee.com/csw48">
-    <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" width="217" height="60">
-  </a>
+  <a href="https://ko-fi.com/B4D520APT0"><img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Support me on Ko-fi"></a>
 </p>
 
 <p align="center">
-  If WineMorpher helped you, you can support development freely through Buy Me a Coffee.
+  If WineMorpher helped you, you can support development freely through Ko-fi.
 </p>
 
 WineMorpher is an experimental World of Warcraft 3.3.5a appearance morpher for Wine and WoWSilicon on macOS.
