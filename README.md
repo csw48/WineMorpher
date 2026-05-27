@@ -15,7 +15,27 @@ It has two parts:
 - a WoW addon, used for the `/wmorph` GUI and commands
 - a 32-bit Windows DLL, loaded by WoWSilicon/Wine from `dlls.txt`
 
-![WineMorpher UI map](docs/assets/winemorpher-ui-map.svg)
+![WineMorpher preview and item browser](docs/screenshots/preview-browser.png)
+
+## Screenshots
+
+### In-game morph result
+
+| Before | After |
+| --- | --- |
+| ![Character before morphing](docs/screenshots/no-morph.png) | ![Character after morphing](docs/screenshots/morphed-character.png) |
+
+### Preview browser
+
+![WineMorpher preview browser before applying a morph](docs/screenshots/preview-before.png)
+
+### Mount morph
+
+![WineMorpher mount morph result](docs/screenshots/mount-morph.png)
+
+### Set preview
+
+![WineMorpher set preview](docs/screenshots/set-preview.png)
 
 ## Download
 
