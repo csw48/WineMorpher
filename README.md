@@ -6,6 +6,10 @@
   </a>
 </p>
 
+<p align="center">
+  If WineMorpher helped you, you can support development freely through Buy Me a Coffee.
+</p>
+
 WineMorpher is an experimental World of Warcraft 3.3.5a appearance morpher for Wine and WoWSilicon on macOS.
 
 It has two parts:
